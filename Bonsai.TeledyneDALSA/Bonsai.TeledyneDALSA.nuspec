@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>$id$</id>
+    <version>$version$</version>
+    <title>$title$</title>
+    <authors>Nicholas Guilbeault</authors>
+    <owners>$author$</owners>
+    <description>$description$</description>
+    <copyright>Nicholas Guilbeault © 2017</copyright>
+    <tags>Bonsai Teledyne DALSA Sapera</tags>
+  </metadata>
+  <files>
+    <file src="Bonsai.TeledyneDALSA.props" target="build\net45"/>
+    <file src="Bonsai.TeledyneDALSA.targets" target="build\net45"/>
+    <file src="..\Externals\SaperaNET\net\**\*.dll" target="build\net45\bin"/>
+  </files>
+</package>

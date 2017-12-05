@@ -1,0 +1,16 @@
+C:\Users\Thiele Lab\Documents\Bonsai\Bonsai.TeledyneDALSA\Bonsai.TeledyneDALSA\bin\Debug\Bonsai.Core.dll
+C:\Users\Thiele Lab\Documents\Bonsai\Bonsai.TeledyneDALSA\Bonsai.TeledyneDALSA\bin\Debug\DALSA.SaperaLT.SapClassBasic.dll
+C:\Users\Thiele Lab\Documents\Bonsai\Bonsai.TeledyneDALSA\Bonsai.TeledyneDALSA\bin\Debug\OpenCV.Net.dll
+C:\Users\Thiele Lab\Documents\Bonsai\Bonsai.TeledyneDALSA\Bonsai.TeledyneDALSA\bin\Debug\System.Reactive.Core.dll
+C:\Users\Thiele Lab\Documents\Bonsai\Bonsai.TeledyneDALSA\Bonsai.TeledyneDALSA\bin\Debug\System.Reactive.Interfaces.dll
+C:\Users\Thiele Lab\Documents\Bonsai\Bonsai.TeledyneDALSA\Bonsai.TeledyneDALSA\bin\Debug\System.Reactive.Linq.dll
+C:\Users\Thiele Lab\Documents\Bonsai\Bonsai.TeledyneDALSA\Bonsai.TeledyneDALSA\bin\Debug\Bonsai.Core.xml
+C:\Users\Thiele Lab\Documents\Bonsai\Bonsai.TeledyneDALSA\Bonsai.TeledyneDALSA\bin\Debug\OpenCV.Net.xml
+C:\Users\Thiele Lab\Documents\Bonsai\Bonsai.TeledyneDALSA\Bonsai.TeledyneDALSA\bin\Debug\System.Reactive.Core.xml
+C:\Users\Thiele Lab\Documents\Bonsai\Bonsai.TeledyneDALSA\Bonsai.TeledyneDALSA\bin\Debug\System.Reactive.Interfaces.xml
+C:\Users\Thiele Lab\Documents\Bonsai\Bonsai.TeledyneDALSA\Bonsai.TeledyneDALSA\bin\Debug\System.Reactive.Linq.xml
+C:\Users\Thiele Lab\Documents\Bonsai\Bonsai.TeledyneDALSA\Bonsai.TeledyneDALSA\obj\Debug\Bonsai.TeledyneDALSA.csprojResolveAssemblyReference.cache
+C:\Users\Thiele Lab\Documents\Bonsai\Bonsai.TeledyneDALSA\Bonsai.TeledyneDALSA\bin\Debug\Bonsai.TeledyneDALSA.dll
+C:\Users\Thiele Lab\Documents\Bonsai\Bonsai.TeledyneDALSA\Bonsai.TeledyneDALSA\bin\Debug\Bonsai.TeledyneDALSA.pdb
+C:\Users\Thiele Lab\Documents\Bonsai\Bonsai.TeledyneDALSA\Bonsai.TeledyneDALSA\obj\Debug\Bonsai.TeledyneDALSA.dll
+C:\Users\Thiele Lab\Documents\Bonsai\Bonsai.TeledyneDALSA\Bonsai.TeledyneDALSA\obj\Debug\Bonsai.TeledyneDALSA.pdb
