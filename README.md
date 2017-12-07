@@ -18,4 +18,4 @@ Running the **SaperaCapture** node requires Bonsai to be launched in no boot mod
 
 `Bonsai.exe --noboot`
 
-This has only been tested with the Teledyne DALSA Genie Nano Camera Series. 
+This has only been tested with the Teledyne DALSA Genie Nano camera series. 
