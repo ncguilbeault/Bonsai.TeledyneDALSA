@@ -77,7 +77,6 @@ namespace Bonsai.TeledyneDALSA
         }
 
         // Create exposure time parameter
-        bool exposureTimeChanged;
         private double exposureTime;
         [Description("Exposure time (ms). This controls the maximum framerate.")]
         public double ExposureTime
@@ -89,14 +88,12 @@ namespace Bonsai.TeledyneDALSA
             set
             {
                 exposureTime = Math.Round(value, 2);
-                exposureTimeChanged = true;
             }
         }
         
         // Create frame rate parameter
-        bool frameRateChanged;
         private double frameRate;
-        [Description("Desired frame rate (frames / s). This is superceded by the maximum framerate allowed by the exposure time.")]
+        [Description("Desired frame rate (frames / s). This is superceded by the maximum framerate allowed by the exposure time. When UseMaxFrameRate is set to True, FrameRate is set to -1.")]
         public double FrameRate
         {
             get
@@ -106,12 +103,10 @@ namespace Bonsai.TeledyneDALSA
             set
             {
                 frameRate = Math.Floor(value * 100) / 100;
-                frameRateChanged = true;
             }
         }
 
         // Create black level parameter
-        bool blackLevelChanged;
         private double blackLevel;
         [Description("Black level (DN). This controls the analog black level as DC offset applied to the video signal.")]
         public double BlackLevel
@@ -123,12 +118,10 @@ namespace Bonsai.TeledyneDALSA
             set
             {
                 blackLevel = Math.Round(value, 2);
-                blackLevelChanged = true;
             }
         }
 
         // Create gain parameter
-        bool gainChanged;
         private double gain;
         [Description("Adjusts the gain (dB). This controls the gain as an amplification factor applied to the video signal.")]
         public double Gain
@@ -140,7 +133,6 @@ namespace Bonsai.TeledyneDALSA
             set
             {
                 gain = Math.Round(value, 2);
-                gainChanged = true;
             }
         }
 
@@ -156,12 +148,12 @@ namespace Bonsai.TeledyneDALSA
             set
             {
                 useMaxFrameRate = value;
-                frameRateChanged = true;
             }
         }
 
+        // Create parameter for determining whether to reset the device before acquiring frames
         private bool resetDevice;
-        [Description("Resets the camera just prior to acquisition.")]
+        [Description("Resets the camera before acquiring frames.")]
         public bool ResetDevice
         {
             get
@@ -178,14 +170,7 @@ namespace Bonsai.TeledyneDALSA
         // Create variables
         IObservable<SaperaDataFrame> source;
         readonly object captureLock = new object();
-        Size frameSize;
-        IplDepth depth;
         IObserver<SaperaDataFrame> global_observer;
-        double maxFrameRate;
-        double doubleFeatureValue;
-        int width;
-        int height;
-        int intFeatureValue;
 
         // Function used for destroying and disposing of sapera class objects
         static void DestroyObjects(SapAcqDevice device, SapBuffer buffer, SapTransfer transfer, SapFeature feature)
@@ -215,66 +200,6 @@ namespace Bonsai.TeledyneDALSA
             }
         }
 
-        // Checks camera's parameters
-        private void CheckCameraParameters(SapAcqDevice device, SapFeature feature)
-        {
-            Console.WriteLine("CheckParameters Exposure");
-            if (exposureTimeChanged)
-            {
-                // User changed the exposure time parameter.
-                // Set the exposure time feature on the camera.
-                device.SetFeatureValue("ExposureTime", ExposureTime * 1000.0);
-
-                exposureTimeChanged = false;
-
-                // Adjust the framerate given this new exposure time
-                frameRateChanged = true;
-            }
-            Console.WriteLine("CheckParameters FrameRate");
-            if (frameRateChanged)
-            {
-                if (!UseMaxFrameRate)
-                {
-                    // Get the maximum framerate for the current exposure time
-                    device.GetFeatureInfo("AcquisitionFrameRate", feature);
-                    Console.WriteLine("AcquisitionFrameRate: ", feature.DataType);
-                    feature.GetValueMax(out maxFrameRate);
-                    if (maxFrameRate <= FrameRate)
-                    {
-                        // If the frame rate variable exceeds the maximum frame rate, set the frame rate to the maximum value
-                        device.SetFeatureValue("AcquisitionFrameRate", maxFrameRate);
-                        FrameRate = maxFrameRate;
-                    }
-                    else
-                    {
-                        // Set camera's frame rate to frame rate variable
-                        device.SetFeatureValue("AcquisitionFrameRate", FrameRate);
-                    }
-                }
-
-                frameRateChanged = false;
-            }
-            Console.WriteLine("CheckParameters BlackLevel");
-            if (blackLevelChanged)
-            {
-                // User changed the black level parameter.
-                // Set the black level feature on the camera.
-                device.SetFeatureValue("BlackLevel", BlackLevel);
-
-                blackLevelChanged = false;
-            }
-            Console.WriteLine("CheckParameters Gain");
-            if (gainChanged)
-            {
-                // User changed the gain parameter.
-                // Set the gain feature on the camera.
-                device.SetFeatureValue("Gain", Gain);
-
-                gainChanged = false;
-            }
-            Console.WriteLine("CheckParameters End");
-        }
-
         // Callback function for when a frame is grabbed by the camera
         private void Xfer_XferNotify(object sender, SapXferNotifyEventArgs args)
         {
@@ -285,7 +210,7 @@ namespace Bonsai.TeledyneDALSA
                 // Access the buffer data
                 buffer.GetAddress(out IntPtr image);
                 // Copy the frame into an IplImage object
-                output = new IplImage(frameSize, depth, 1, image).Clone();
+                output = new IplImage(new Size(buffer.Width, buffer.Height), IplDepth.U8, 1, image).Clone();
             }
             // Send to the next node
             global_observer.OnNext(new SaperaDataFrame(output, buffer.DeviceTimeStamp, buffer.CounterStamp, buffer.HostCounterStamp));
@@ -308,20 +233,25 @@ namespace Bonsai.TeledyneDALSA
                             SapTransfer transfer = null;
                             SapBuffer buffer = null;
                             SapFeature feature = null;
+                            double doubleFeatureValue;
+                            double maxValue;
+                            double minValue;
                             global_observer = observer;
 
                             // Get server count
                             int serverCount = SapManager.GetServerCount();
 
+                            // Check if a server is available
                             if (serverCount == 0)
                             {
                                 Console.WriteLine("No device found.\n");
                                 return;
                             }
 
+                            // Check if index variable is valid
                             if (Index >= 0 && Index < serverCount - 1)
                             {
-                                // Finds the name of the server
+                                // Find the name of the server
                                 serverName = SapManager.GetServerName(Index + 1);
                             }
                             else
@@ -330,19 +260,19 @@ namespace Bonsai.TeledyneDALSA
                                 return;
                             }
 
-                            // Finds server location
+                            // Find server location
                             location = new SapLocation(serverName, 0);
 
-                            // Finds device
+                            // Find device
                             device = new SapAcqDevice(location, false);
 
-                            // Creates buffer
+                            // Create buffer
                             buffer = new SapBufferWithTrash(3, device, SapBuffer.MemoryType.ScatterGather);
 
-                            // Initializes transfer between device and buffer
+                            // Initialize transfer between device and buffer
                             transfer = new SapAcqDeviceToBuf(device, buffer);
 
-                            // Checks if device was created
+                            // Check if device was created
                             if (!device.Create())
                             {
                                 Console.WriteLine("Error during SapAcqDevice creation.\n");
@@ -351,12 +281,12 @@ namespace Bonsai.TeledyneDALSA
                                 return;
                             }
 
-                            // Initializes frame handler for end of frame events
+                            // Initialize frame handler for end of frame events
                             transfer.Pairs[0].EventType = SapXferPair.XferEventType.EndOfFrame;
                             transfer.XferNotify += new SapXferNotifyHandler(Xfer_XferNotify);
                             transfer.XferNotifyContext = buffer;
 
-                            // Checks if buffer was created
+                            // Check if buffer was created
                             if (!buffer.Create())
                             {
                                 Console.WriteLine("Error during SapBuffer creation.\n");
@@ -365,7 +295,7 @@ namespace Bonsai.TeledyneDALSA
                                 return;
                             }
 
-                            // Checks if transfer layer was created
+                            // Check if transfer layer was created
                             if (!transfer.Create())
                             {
                                 Console.WriteLine("Error during SapAcqDeviceToBuf creation.\n");
@@ -374,9 +304,10 @@ namespace Bonsai.TeledyneDALSA
                                 return;
                             }
 
-                            // Creates feature object
+                            // Create feature
                             feature = new SapFeature(location);
 
+                            // Check if feature was created
                             if (!feature.Create())
                             {
                                 Console.WriteLine("Error during SapFeature creation.\n");
@@ -385,227 +316,271 @@ namespace Bonsai.TeledyneDALSA
                                 return;
                             }
 
-                            // Resets device
+                            // Check if reset device is true
                             if (resetDevice)
                             {
-                                DestroyObjects(device, buffer, transfer, feature);
-                                location.Dispose();
-
-                                SapManager.ResetServer(serverName, true);
-
-                                location = new SapLocation(serverName, 0);
-                                device = new SapAcqDevice(location, false);
-                                buffer = new SapBufferWithTrash(3, device, SapBuffer.MemoryType.ScatterGather);
-                                transfer = new SapAcqDeviceToBuf(device, buffer);
-                                if (!device.Create())
+                                // Check if feature is available
+                                if (device.IsFeatureAvailable("DeviceReset"))
                                 {
-                                    Console.WriteLine("Error during SapAcqDevice creation.\n");
+                                    // Reset the device
+                                    device.SetFeatureValue("DeviceReset", false);
+
+                                    // Destroy objects
                                     DestroyObjects(device, buffer, transfer, feature);
                                     location.Dispose();
-                                    return;
+
+                                    // Check if device is online
+                                    while (!SapManager.IsResourceAvailable(serverName, SapManager.ResourceType.AcqDevice, 0))
+                                    {
+                                        // Do nothing
+                                    }
+
+                                    // Create objects again
+                                    location = new SapLocation(serverName, 0);
+                                    device = new SapAcqDevice(location, false);
+                                    buffer = new SapBufferWithTrash(3, device, SapBuffer.MemoryType.ScatterGather);
+                                    transfer = new SapAcqDeviceToBuf(device, buffer);
+                                    if (!device.Create())
+                                    {
+                                        Console.WriteLine("Error during SapAcqDevice creation.\n");
+                                        DestroyObjects(device, buffer, transfer, feature);
+                                        location.Dispose();
+                                        return;
+                                    }
+
+                                    transfer.Pairs[0].EventType = SapXferPair.XferEventType.EndOfFrame;
+                                    transfer.XferNotify += new SapXferNotifyHandler(Xfer_XferNotify);
+                                    transfer.XferNotifyContext = buffer;
+
+                                    if (!buffer.Create())
+                                    {
+                                        Console.WriteLine("Error during SapBuffer creation.\n");
+                                        DestroyObjects(device, buffer, transfer, feature);
+                                        location.Dispose();
+                                        return;
+                                    }
+
+                                    if (!transfer.Create())
+                                    {
+                                        Console.WriteLine("Error during SapAcqDeviceToBuf creation.\n");
+                                        DestroyObjects(device, buffer, transfer, feature);
+                                        location.Dispose();
+                                        return;
+                                    }
+
+                                    feature = new SapFeature(location);
+
+                                    if (!feature.Create())
+                                    {
+                                        Console.WriteLine("Error during SapFeature creation.\n");
+                                        DestroyObjects(device, buffer, transfer, feature);
+                                        location.Dispose();
+                                        return;
+                                    }
                                 }
-
-                                transfer.Pairs[0].EventType = SapXferPair.XferEventType.EndOfFrame;
-                                transfer.XferNotify += new SapXferNotifyHandler(Xfer_XferNotify);
-                                transfer.XferNotifyContext = buffer;
-
-                                if (!buffer.Create())
+                                else
                                 {
-                                    Console.WriteLine("Error during SapBuffer creation.\n");
-                                    DestroyObjects(device, buffer, transfer, feature);
-                                    location.Dispose();
-                                    return;
-                                }
-                                Console.WriteLine("SapBuffer created.\n");
-
-                                if (!transfer.Create())
-                                {
-                                    Console.WriteLine("Error during SapAcqDeviceToBuf creation.\n");
-                                    DestroyObjects(device, buffer, transfer, feature);
-                                    location.Dispose();
-                                    return;
-                                }
-                                Console.WriteLine("SapAcqDeviceToBuf created.\n");
-
-                                Console.WriteLine("Creating SapFeature.\n");
-                                feature = new SapFeature(location);
-                                if (!feature.Create())
-                                {
-                                    Console.WriteLine("Error during SapFeature creation.\n");
-                                    DestroyObjects(device, buffer, transfer, feature);
-                                    location.Dispose();
-                                    return;
+                                    Console.WriteLine("DeviceReset not available.\n");
                                 }
                             }
 
+                            // Check if frame rate control is available
                             if (device.IsFeatureAvailable("acquisitionFrameRateControlMode"))
                             {
-                                // Checks whether to set frame rate to max
+                                // Check if use max frame rate is true
                                 if (UseMaxFrameRate)
                                 {
+                                    // Set the frame rate to max
                                     device.SetFeatureValue("acquisitionFrameRateControlMode", "MaximumSpeed");
                                 }
                                 else
                                 {
+                                    // Set the frame rate to programmable
                                     device.SetFeatureValue("acquisitionFrameRateControlMode", "Programmable");
                                 }
                             }
-
-                            // Sets exposure time and frame rate to camera's current values
-                            if (ExposureTime == 0 && FrameRate == 0)
-                            {
-                                if (device.IsFeatureAvailable("ExposureTime"))
-                                {
-                                    // Set exposure time variable to current value on the camera (convert from us to ms)
-                                    device.GetFeatureValue("ExposureTime", out doubleFeatureValue);
-                                    ExposureTime = doubleFeatureValue / 1000.0;
-                                }
-
-                                if (device.IsFeatureAvailable("AcquisitionFrameRate") && !UseMaxFrameRate)
-                                {
-                                    // Set frame rate variable to current value on camera
-                                    device.GetFeatureValue("AcquisitionFrameRate", out doubleFeatureValue);
-                                    FrameRate = doubleFeatureValue;
-                                }
-                            }
-                            // Change camera's frame rate if frame rate has been manually set
-                            else if (ExposureTime == 0 && FrameRate != 0)
-                            {
-                                if (device.IsFeatureAvailable("ExposureTime"))
-                                {
-                                    // Set exposure time variable to current value on the camera (convert from us to ms)
-                                    device.GetFeatureValue("ExposureTime", out doubleFeatureValue);
-                                    ExposureTime = doubleFeatureValue / 1000.0;
-                                }
-
-                                if (device.IsFeatureAvailable("AcquisitionFrameRate"))
-                                {
-                                    if (!UseMaxFrameRate)
-                                    {
-                                        device.GetFeatureInfo("AcquisitionFrameRate", feature);
-                                        feature.GetValueMax(out maxFrameRate);
-                                        if (maxFrameRate <= FrameRate)
-                                        {
-                                            // If the frame rate variable exceeds the maximum frame rate, set the frame rate to the maximum value
-                                            device.SetFeatureValue("AcquisitionFrameRate", maxFrameRate);
-                                            FrameRate = maxFrameRate;
-                                        }
-                                        else
-                                        {
-                                            // Set camera's frame rate to frame rate variable
-                                            device.SetFeatureValue("AcquisitionFrameRate", FrameRate);
-                                        }
-                                    }
-                                }
-                            }
-                            // Change camera's exposure time if exposure time has been manually set
-                            else if (ExposureTime != 0 && FrameRate == 0)
-                            {
-                                if (device.IsFeatureAvailable("ExposureTime"))
-                                {
-                                    // Sets camera's exposure time to exposure time variable
-                                    device.GetFeatureInfo("ExposureTime", feature);
-                                    device.SetFeatureValue("ExposureTime", ExposureTime * 1000.0);
-                                }
-
-                                if (device.IsFeatureAvailable("AcquisitionFrameRate") && !UseMaxFrameRate)
-                                {
-                                    // Set frame rate variable to current value on camera
-                                    device.GetFeatureInfo("AcquisitionFrameRate", feature);
-                                    device.GetFeatureValue("AcquisitionFrameRate", out doubleFeatureValue);
-                                    FrameRate = doubleFeatureValue;
-                                }
-                            }
-                            // Changes camera's exposure time and frame rate to match the manually changed variables
                             else
                             {
-                                if (device.IsFeatureAvailable("ExposureTime"))
-                                {
-                                    // Sets camera's exposure time to exposure time variable
-                                    device.GetFeatureInfo("ExposureTime", feature);
-                                    device.SetFeatureValue("ExposureTime", ExposureTime * 1000.0);
-                                }
+                                Console.WriteLine("UseMaxFrameRate not available.\n");
+                            }
 
-                                if (device.IsFeatureAvailable("AcquisitionFrameRate"))
+                            // Check if exposure time is available
+                            if (device.IsFeatureAvailable("ExposureTime"))
+                            {
+                                // Check if exposure has been manually set
+                                if (ExposureTime == 0)  
                                 {
-                                    if (!UseMaxFrameRate)
+                                    // Set exposure time variable to current value on the camera (convert from us to ms)
+                                    device.GetFeatureValue("ExposureTime", out doubleFeatureValue);
+                                    ExposureTime = doubleFeatureValue / 1000.0;
+                                }
+                                else
+                                {
+                                    // Gets information about exposure time
+                                    device.GetFeatureInfo("ExposureTime", feature);
+                                    feature.GetValueMax(out maxValue);
+                                    feature.GetValueMin(out minValue);
+
+                                    if (ExposureTime * 1000.0 < maxValue && ExposureTime * 1000.0 > minValue)
                                     {
+                                        // Sets camera's exposure time to exposure time variable
+                                        device.SetFeatureValue("ExposureTime", ExposureTime * 1000.0);
+                                    }
+                                    else if (ExposureTime * 1000.0 >= maxValue)
+                                    {
+                                        // If the exposure time variable is greater than or equal to the maximum exposure time, set the exposure time to the maximum value
+                                        device.SetFeatureValue("ExposureTime", maxValue);
+                                        ExposureTime = maxValue;
+                                    }
+                                    else
+                                    {
+                                        // If the exposure time variable is less than or equal to the minumum exposure time, set the exposure time to the minumum value
+                                        device.SetFeatureValue("ExposureTime", minValue);
+                                        ExposureTime = minValue;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                Console.WriteLine("Feature ExposureTime not available.\n");
+                            }
+
+                            // Check if frame rate is available
+                            if (device.IsFeatureAvailable("AcquisitionFrameRate"))
+                            {
+                                // Check if use max frame rate is true
+                                if (UseMaxFrameRate)
+                                {
+                                    // Set frame rate variable to -1
+                                    FrameRate = -1;
+                                }
+                                else
+                                {
+                                    // Check if frame rate has been manually set
+                                    if (FrameRate == 0)
+                                    {
+                                        // Set frame rate variable to current value on camera
+                                        device.GetFeatureValue("AcquisitionFrameRate", out doubleFeatureValue);
+                                        FrameRate = doubleFeatureValue;
+                                    }
+                                    else
+                                    {
+                                        // Gets information about the frame rate
                                         device.GetFeatureInfo("AcquisitionFrameRate", feature);
-                                        feature.GetValueMax(out maxFrameRate);
-                                        if (maxFrameRate <= FrameRate)
-                                        {
-                                            // If the frame rate variable exceeds the maximum frame rate, set the frame rate to the maximum value
-                                            device.SetFeatureValue("AcquisitionFrameRate", maxFrameRate);
-                                            FrameRate = maxFrameRate;
-                                        }
-                                        else
+                                        feature.GetValueMax(out maxValue);
+                                        feature.GetValueMin(out minValue);
+
+                                        if (FrameRate < maxValue && FrameRate > minValue)
                                         {
                                             // Set camera's frame rate to frame rate variable
                                             device.SetFeatureValue("AcquisitionFrameRate", FrameRate);
                                         }
+                                        else if (FrameRate >= maxValue || FrameRate == -1)
+                                        {
+                                            // If the frame rate variable is greater than or equal to the maximum frame rate, set the frame rate to the maximum value
+                                            device.SetFeatureValue("AcquisitionFrameRate", maxValue);
+                                            FrameRate = maxValue;
+                                        }
+                                        else
+                                        {
+                                            // If the frame rate variable is less than or equal to the minumum frame rate, set the frame rate to the minumum value
+                                            device.SetFeatureValue("AcquisitionFrameRate", minValue);
+                                            FrameRate = minValue;
+                                        }
                                     }
                                 }
                             }
-
-                            // Set black level parameter to the camera's current black level setting
-                            if (BlackLevel == 0)
+                            
+                            // Check if black level is available
+                            if (device.IsFeatureAvailable("BlackLevel"))
                             {
-                                if (device.IsFeatureAvailable("BlackLevel"))
+                                // Check if black level has been manually set
+                                if (BlackLevel == 0)
                                 {
-                                    device.GetFeatureInfo("BlackLevel", feature);
+                                    // Set black level parameter to the camera's current black level setting
                                     device.GetFeatureValue("BlackLevel", out doubleFeatureValue);
                                     BlackLevel = doubleFeatureValue;
-                                }                              
-                            }
-                            // Changes the camera's black level if black level has been set manually
-                            else
-                            {
-                                if (device.IsFeatureAvailable("BlackLevel"))
+                                }
+                                else
                                 {
+                                    // Gets information about the black level
                                     device.GetFeatureInfo("BlackLevel", feature);
-                                    device.SetFeatureValue("BlackLevel", BlackLevel);
+                                    feature.GetValueMax(out maxValue);
+                                    feature.GetValueMin(out minValue);
+
+                                    if (BlackLevel < maxValue && BlackLevel > minValue)
+                                    {
+                                        // Set camera's black level to black level variable
+                                        device.SetFeatureValue("BlackLevel", BlackLevel);
+                                    }
+                                    else if (BlackLevel >= maxValue)
+                                    {
+                                        // If the black level variable is greater than or equal to the maximum black level, set the black level to the maximum value
+                                        device.SetFeatureValue("BlackLevel", maxValue);
+                                        BlackLevel = maxValue;
+                                    }
+                                    else
+                                    {
+                                        // If the black level variable is less than or equal to the minumum black level, set the black level to the minumum value
+                                        device.SetFeatureValue("BlackLevel", minValue);
+                                        BlackLevel = minValue;
+                                    }
                                 }
                             }
-
-                            // Set gain parameter to the camera's current gain setting
-                            if (Gain == 0)
+                            else
                             {
-                                if (device.IsFeatureAvailable("Gain"))
+                                Console.WriteLine("Feature BlackLevel not available.\n");
+                            }
+
+                            // Check if gain is available
+                            if (device.IsFeatureAvailable("Gain"))
+                            {
+                                // Check if gain has been manually set
+                                if (Gain == 0)
                                 {
-                                    device.GetFeatureInfo("Gain", feature);
+                                    // Set gain parameter to the camera's current gain setting
                                     device.GetFeatureValue("Gain", out doubleFeatureValue);
                                     Gain = doubleFeatureValue;
                                 }
-                            }
-                            // Changes the camera's gain if gain has been set manually
-                            else if (Gain != 0)
-                            {
-                                if (device.IsFeatureAvailable("Gain"))
+                                else 
                                 {
+                                    // Gets information about the gain
                                     device.GetFeatureInfo("Gain", feature);
-                                    device.SetFeatureValue("Gain", Gain);
+                                    feature.GetValueMax(out maxValue);
+                                    feature.GetValueMin(out minValue);
+
+                                    if (Gain < maxValue && Gain > minValue)
+                                    {
+                                        // Set camera's gain to gain variable
+                                        device.SetFeatureValue("Gain", Gain);
+                                    }
+                                    else if (Gain >= maxValue)
+                                    {
+                                        // If the gain variable is greater than or equal to the maximum gain, set the gain to the maximum value
+                                        device.SetFeatureValue("Gain", maxValue);
+                                        Gain = maxValue;
+                                    }
+                                    else
+                                    {
+                                        // If the gain variable is less than or equal to the minumum gain, set the gain to the minumum value
+                                        device.SetFeatureValue("Gain", minValue);
+                                        Gain = minValue;
+                                    }
                                 }
                             }
-
-                            // Set frameSize & depth features
-                            device.GetFeatureInfo("SensorWidth", feature);
-                            device.GetFeatureValue("SensorWidth", out intFeatureValue);
-                            width = intFeatureValue;
-                            device.GetFeatureInfo("SensorHeight", feature);
-                            device.GetFeatureValue("SensorHeight", out intFeatureValue);
-                            height = intFeatureValue;
-                            frameSize = new Size(width, height);
-                            depth = IplDepth.U8;
+                            else
+                            {
+                                Console.WriteLine("Feature Gain not available.\n");
+                            }
 
                             try
                             {
-                                // Start capturing frames
+                                // Start grabbing frames
                                 transfer.Grab();
 
                                 while (!cancellationToken.IsCancellationRequested)
                                 {
-                                    // Check the parameters of the camera
-                                    // CheckCameraParameters(device, feature);
+                                    // Do nothing
                                 }
 
                                 // Stop camera acquisition
@@ -614,7 +589,7 @@ namespace Bonsai.TeledyneDALSA
                             }
                             finally
                             {
-                                // Shutdown everything
+                                // Destroy objects
                                 DestroyObjects(device, buffer, transfer, feature);
                                 location.Dispose();
                             }
