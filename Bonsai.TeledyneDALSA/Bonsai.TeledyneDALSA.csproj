@@ -37,7 +37,7 @@
     </Reference>
     <Reference Include="DALSA.SaperaLT.SapClassBasic, Version=8.20.0.1718, Culture=neutral, PublicKeyToken=4d8604101dcb6b58, processorArchitecture=AMD64">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\Externals\SaperaNET\net\DALSA.SaperaLT.SapClassBasic.dll</HintPath>
+      <HintPath>..\Externals\SaperaNET\net\x64\DALSA.SaperaLT.SapClassBasic.dll</HintPath>
     </Reference>
     <Reference Include="OpenCV.Net">
       <HintPath>..\..\..\Documents\Bonsai\Bonsai.TeledyneDALSA\packages\OpenCV.Net.3.3.1\lib\net40\OpenCV.Net.dll</HintPath>
