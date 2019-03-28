@@ -32,7 +32,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Bonsai.Core, Version=2.3.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Bonsai.Core.2.3.0\lib\net45\Bonsai.Core.dll</HintPath>
+      <HintPath>..\..\..\Documents\Bonsai\Bonsai.TeledyneDALSA\packages\Bonsai.Core.2.3.0\lib\net45\Bonsai.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="DALSA.SaperaLT.SapClassBasic, Version=8.20.0.1718, Culture=neutral, PublicKeyToken=4d8604101dcb6b58, processorArchitecture=AMD64">
@@ -40,21 +40,21 @@
       <HintPath>..\Externals\SaperaNET\net\DALSA.SaperaLT.SapClassBasic.dll</HintPath>
     </Reference>
     <Reference Include="OpenCV.Net">
-      <HintPath>..\..\..\..\AppData\Local\Bonsai\Packages\OpenCV.Net.3.3.1\lib\net40\OpenCV.Net.dll</HintPath>
+      <HintPath>..\..\..\Documents\Bonsai\Bonsai.TeledyneDALSA\packages\OpenCV.Net.3.3.1\lib\net40\OpenCV.Net.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Reactive.Core, Version=2.2.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Rx-Core.2.2.5\lib\net45\System.Reactive.Core.dll</HintPath>
+      <HintPath>..\..\..\Documents\Bonsai\Bonsai.TeledyneDALSA\packages\Rx-Core.2.2.5\lib\net45\System.Reactive.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System.Reactive.Interfaces, Version=2.2.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Rx-Interfaces.2.2.5\lib\net45\System.Reactive.Interfaces.dll</HintPath>
+      <HintPath>..\..\..\Documents\Bonsai\Bonsai.TeledyneDALSA\packages\Rx-Interfaces.2.2.5\lib\net45\System.Reactive.Interfaces.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System.Reactive.Linq, Version=2.2.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Rx-Linq.2.2.5\lib\net45\System.Reactive.Linq.dll</HintPath>
+      <HintPath>..\..\..\Documents\Bonsai\Bonsai.TeledyneDALSA\packages\Rx-Linq.2.2.5\lib\net45\System.Reactive.Linq.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System.Xml.Linq" />

@@ -64,7 +64,7 @@ namespace Bonsai.TeledyneDALSA
     }
 
     // Set the node's description
-    [Description("Produces a sequence of images acquired from an Allied Vision camera using the Vimba SDK.")]
+    [Description("Produces a sequence of images acquired from an Teledyne DALSA camera using the Sapera SDK.")]
     public class SaperaCapture : Source<SaperaDataFrame>
     {
         // Create camera index parameter
