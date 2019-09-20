@@ -11,11 +11,11 @@ Additionally, a NuGet package can be generated from source by running:
 ```
 
 ## Usage
-After the NuGet package is added to Bonsai, a **SaperaCapture** source node will become available. This node will produce a sequence of frames captured from a connected Teledyne DALSA camera that uses the Sapera LT SDK.
+Oen up the Bonsai Package Manager, go to settings, and then add the .nuget folder path found in the Bonsai.TeledyneDALSA repository to the list of available package sources. After the NuGet package is added to Bonsai, a **SaperaCapture** source node should become available. Adding this node to your workflows will allow you to produce a sequence of frames captured from a connected Teledyne DALSA Gig-E camera that uses the Sapera LT SDK.
 
 ### Notes:
-Running the **SaperaCapture** node requires Bonsai to be launched in no boot mode, with the additional --noboot flag. From the command line, use:
+Running the **SaperaCapture** node requires Bonsai to be launched in no boot mode, with the additional --noboot flag, otherwise an error will be thrown. To launch bonsai in no boot mode from the command line, use:
 
 `Bonsai.exe --noboot`
 
-This has only been tested with the Teledyne DALSA Genie Nano camera series. 
+This package was originally developed and tested with the Teledyne DALSA Genie Nano Gig-E camera series. Since I have not tested other Teledyne DALSA cameras, I cannot ensure that this package will work with your board and camera setup. However, I encourage you to try it out anyways and let me know if it works.
