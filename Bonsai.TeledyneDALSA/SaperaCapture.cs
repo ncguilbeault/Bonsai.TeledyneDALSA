@@ -79,17 +79,7 @@ namespace Bonsai.TeledyneDALSA
         // Create exposure time parameter
         private double exposureTime;
         [Description("Exposure time (ms). This controls the maximum framerate.")]
-        public double ExposureTime
-        {
-            get
-            {
-                return exposureTime;
-            }
-            set
-            {
-                exposureTime = Math.Round(value, 2);
-            }
-        }
+        public double ExposureTime { get => exposureTime; set => exposureTime = Math.Round(value, 2); }
         
         // Create frame rate parameter
         private double frameRate;
@@ -203,14 +193,15 @@ namespace Bonsai.TeledyneDALSA
         // Callback function for when a frame is grabbed by the camera
         private void Xfer_XferNotify(object sender, SapXferNotifyEventArgs args)
         {
-            IplImage output;
             SapBuffer buffer = args.Context as SapBuffer;
+            IplImage output = new IplImage(new Size(buffer.Width, buffer.Height), IplDepth.U8, 1);
             unsafe
             {
                 // Access the buffer data
                 buffer.GetAddress(out IntPtr image);
+                IplImage bufferData = new IplImage(new Size(buffer.Width, buffer.Height), IplDepth.U8, 1, image);
                 // Copy the frame into an IplImage object
-                output = new IplImage(new Size(buffer.Width, buffer.Height), IplDepth.U8, 1, image).Clone();
+                CV.Copy(bufferData, output);
             }
             // Send to the next node
             global_observer.OnNext(new SaperaDataFrame(output, buffer.DeviceTimeStamp, buffer.CounterStamp, buffer.HostCounterStamp));
